@@ -1,0 +1,190 @@
+---
+title: "BS Hazard"
+author: "Zachary Gager"
+date: "11/18/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(survival)
+library(ggplot2)
+library(reshape2)
+library(bshazard)
+library(gridExtra)
+source("../convert_list.R")
+source("../SimulationFunctions.R")
+```
+
+
+# BSHazard for exponential hazard rate with sinusoidal fvt
+
+
+Here, the $\textrm{mean}(\lambda_3(t)) = \textrm{mean}(\frac{0.05}{e} * e^{\textrm{fvt}_2(t)})$, which is just used to find the mean true hazard rate for all the currently alive individuals at each time step. 
+
+### Simulate and Convert Data
+
+The following simulates 1000 organisms in both cases where fvt influences or does not influence the hazard rate. The data also needed to be converted with ```convert_list.R``` for the ```bshazard``` function. Here we also found the average hazard rate at each time step.
+
+```{r}
+out = sim_exp_sin(1000)
+fvt.data = out$fvt
+nat.data = out$nat
+# Calculate average hazard rate accross entire population 
+# from each individual's fvt
+true.fvt.hazard = as.vector(apply(fvt.data, 2, function(col) {
+  col = na.omit(col)
+  mean((0.05 / exp(1)) * exp(col))
+}))[-1]
+
+surv.data.fvt = convert_list(fvt.data)
+surv.data.fvt$time0 = surv.data.fvt$time - 1
+
+surv.data.nat = convert_list(nat.data)
+surv.data.nat$time0 = surv.data.nat$time - 1
+```
+
+### Run ```bshazard```
+
+
+```{r, results=F}
+bs.fvt = bshazard(Surv(time0, time, status)~1, data=surv.data.fvt, phi=1)
+bs.nat = bshazard(Surv(time0, time, status)~1, data=surv.data.nat, phi=1)
+```
+
+We also tested for ```Surv(time0, time, status)~trait```, but it takes much longer to run ```bshazard``` this way and there was not much of a difference in the results. 
+
+### Make Plots
+
+```{r}
+
+nat.toplot = data.frame(
+  "fit"=bs.nat$hazard, 
+  "time"=bs.nat$time, 
+  "true"=rep(0.05, length=length(bs.nat$time)),
+  "lower.ci"=bs.nat$lower.ci,
+  "upper.ci"=bs.nat$upper.ci
+  )
+fvt.toplot = data.frame(
+  "fit"=bs.fvt$hazard, 
+  "time"=bs.fvt$time, 
+  "true"=true.fvt.hazard,
+  "lower.ci"=bs.fvt$lower.ci,
+  "upper.ci"=bs.fvt$upper.ci
+  )
+
+p1 = ggplot(nat.toplot) +
+  geom_line(aes(x=time, y=fit, color="Fitted"), size=1) +
+  geom_line(aes(x=time, y=true, color="Actual"), size=1) +
+  geom_ribbon(aes(x=time, ymin=lower.ci, ymax=upper.ci), alpha=0.15) +
+  theme_bw() +
+  scale_color_manual("", breaks=c("Fitted", "Actual"), values=c("Fitted"="black", "Actual"="red")) +
+  ggtitle("Trait Does Not Influence Survival") +
+  xlab("Time") +
+  ylab("Hazard Rate") +
+  theme(plot.title = element_text(size=18, hjust=0.5), axis.title=element_text(size=12), legend.text=element_text(size=10))
+
+p2 = ggplot(fvt.toplot) +
+  geom_line(aes(x=time, y=fit, color="Fitted"), size=1) +
+  geom_line(aes(x=time, y=true, color="Actual"), size=1) +
+  geom_ribbon(aes(x=time, ymin=lower.ci, ymax=upper.ci), alpha=0.15) +
+  theme_bw() +
+  scale_color_manual("", breaks=c("Fitted", "Actual"), values=c("Fitted"="black", "Actual"="red")) +
+  ggtitle("Trait Does Influence Survival") +
+  xlab("Time") +
+  ylab("Hazard Rate") +
+  theme(plot.title = element_text(size=18, hjust=0.5), axis.title=element_text(size=12), legend.text=element_text(size=10))
+
+grid.arrange(p1,p2, nrow=2)
+
+```
+
+
+Above, the actual hazard rate become more varied towards the end because there are less organisms alive, so the average hazard rate has a greater bias towards specific organisms.
+
+
+# BSHazard for linear hazard rate with Holling type 2
+
+Here, the $\textrm{mean}(\lambda_1(t)) = \textrm{mean}(0.05 + 0.001 * \textrm{fvt}_1(t))$.
+
+
+### Simulate and Convert Data
+
+Like above, except we simulate for Holling Type II, and calculate the average hazard rate of the population differently. 
+
+```{r}
+out = sim_hollings(1000)
+fvt.data = out$fvt
+nat.data = out$nat
+# Calculate average hazard rate accross entire population 
+# from each individual's fvt
+true.fvt.hazard = as.vector(apply(fvt.data, 2, function(col) {
+  col = na.omit(col)
+  mean(0.05 + 0.001* col)
+}))[-1]
+
+surv.data.fvt = convert_list(fvt.data)
+surv.data.fvt$time0 = surv.data.fvt$time - 1
+
+surv.data.nat = convert_list(nat.data)
+surv.data.nat$time0 = surv.data.nat$time - 1
+
+```
+
+### Run ```bshazard```
+
+```{r, results=F}
+bs.fvt = bshazard(Surv(time0, time, status)~1, data=surv.data.fvt, phi=1)
+bs.nat = bshazard(Surv(time0, time, status)~1, data=surv.data.nat, phi=1)
+```
+
+
+### Make Plots
+
+```{r}
+nat.toplot = data.frame(
+  "fit"=bs.nat$hazard, 
+  "time"=bs.nat$time, 
+  "true"=rep(0.05, length=length(bs.nat$time)),
+  "lower.ci"=bs.nat$lower.ci,
+  "upper.ci"=bs.nat$upper.ci
+  )
+fvt.toplot = data.frame(
+  "fit"=bs.fvt$hazard, 
+  "time"=bs.fvt$time, 
+  "true"=true.fvt.hazard,
+  "lower.ci"=bs.fvt$lower.ci,
+  "upper.ci"=bs.fvt$upper.ci
+  )
+
+p1 = ggplot(nat.toplot) +
+  geom_line(aes(x=time, y=fit, color="Fitted"), size=1) +
+  geom_line(aes(x=time, y=true, color="Actual"), size=1) +
+  geom_ribbon(aes(x=time, ymin=lower.ci, ymax=upper.ci), alpha=0.15) +
+  theme_bw() +
+  scale_color_manual("", breaks=c("Fitted", "Actual"), values=c("Fitted"="black", "Actual"="red")) +
+  ggtitle("Trait Does Not Influence Survival") +
+  xlab("Time") +
+  ylab("Hazard Rate") +
+  theme(plot.title = element_text(size=18, hjust=0.5), axis.title=element_text(size=12), legend.text=element_text(size=10))
+
+p2 = ggplot(fvt.toplot) +
+  geom_line(aes(x=time, y=fit, color="Fitted"), size=1) +
+  geom_line(aes(x=time, y=true, color="Actual"), size=1) +
+  geom_ribbon(aes(x=time, ymin=lower.ci, ymax=upper.ci), alpha=0.15) +
+  theme_bw() +
+  scale_color_manual("", breaks=c("Fitted", "Actual"), values=c("Fitted"="black", "Actual"="red")) +
+  ggtitle("Trait Does Influence Survival") +
+  xlab("Time") +
+  ylab("Hazard Rate") +
+  theme(plot.title = element_text(size=18, hjust=0.5), axis.title=element_text(size=12), legend.text=element_text(size=10))
+grid.arrange(p1,p2)
+```
+
+
+
+
+
+
+
+
