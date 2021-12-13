@@ -1,0 +1,141 @@
+---
+title: "Cox Model"
+author: "Zachary Gager"
+date: "12/13/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      comment=NA, # Removes ## from output
+                      warning=F,  # Removes warnings
+                      message=F) 
+```
+
+# Import Libraries and External Files
+
+```{r}
+library(survival)
+library(gridExtra)
+source("../SimulationFunctions.R")
+source("../convert_list.R")
+```
+
+
+# Cox Example
+
+In our case of one time-varying covariate (the function-valued trait), the Cox Proportional Hazard Regression Model has the form
+
+$\lambda(t) = \lambda_0(t) e^{\beta*\textrm{fvt}(t)}$
+
+The hypothesis test is $H_0: \beta = 0$ and $H_A: \beta \neq 0$.
+
+The ```sim_exp_sin``` function simulates the data with a hazard rate with this exponential relationship, where $\lambda_0(t)$ = ```lambda_fvt``` and $\beta$ = ```m```. Here is an example of analyzing our ```sim_exp_sin``` (with the default parameters and 100 organisms) with the ```coxph``` function. The ```coxph``` function gives the estimated value for $\beta$ and its associated p-value for the above hypothesis test. 
+
+### Simulate
+
+```{r}
+set.seed(4)
+out = sim_exp_sin(100, create_plots=T)
+grid.arrange(out$plot_nat, out$plot_fvt)
+```
+
+### Convert List
+
+Currently, the data looks like this
+
+```{r}
+out$nat[1:5, 1:5] # or out$fvt for where trait influences survival
+```
+
+where the rows are organisms and the columns are time. If the organism is dead their value at that time is NA. 
+
+This is not how the ```coxph``` function likes the data, so we made a ```convert_list``` function to make it in the correct format.
+
+```{r}
+converted_nat = convert_list(out$nat)
+converted_fvt = convert_list(out$fvt)
+head(converted_nat)
+```
+
+Here the status is 1 when the organism dies. The column ```ids``` indicate which organism. For interval censored data, we also needed a $t_0$ for each data point, so we added that like so:
+
+```{r}
+converted_nat$time0 = converted_nat$time - 1
+converted_fvt$time0 = converted_fvt$time - 1
+head(converted_nat)
+```
+
+Now we have time intervals, where each row represents an specific organism, its status, and its function-valued trait at time ```[time0, time)```
+
+### Right Censored
+
+Using the converted lists, we ran them through ```coxph``` as either right or interval censored data. With right censored data, we didn't use ```time0``` in the model. 
+
+
+```{r}
+# Dataset with natural death
+cox_model_right_nat = coxph(Surv(time, status) ~ trait, data=converted_nat)
+summary(cox_model_right_nat)
+```
+
+In the output above, the value of ```coef``` (0.3134) is the estimate of $\beta$, the ```exp(coef)``` (1.368) term is the estimate of $e^\beta$, and the ```Pr(>|z|)``` term (0.278) is the p-value of the above hypothesis test. We noticed that the natural death dataset had a p-value typically greater than 0.05. 
+
+Next is the ```coxph``` function on the dataset where the hazard rate was exponentially proportional to the function-valued trait.
+
+```{r}
+# Dataset with hazard rate exponentially proportional to fvt
+cox_model_right_fvt = coxph(Surv(time, status) ~ trait, data=converted_fvt)
+summary(cox_model_right_fvt)
+```
+
+Here, the ```coef``` term (0.609) is greater than 0. The actual $\beta$ value we used in this simulated dataset was ```m=1```. Also, the p-value here was ```0.0533```, very close to 0.05. We classified the models as follows:
+
+__FVT Influences Survival: __ ```coef > 0``` and ```Pr(>|z|) < 0.05```
+
+__FVT Doesn't Influence Survival: __ ```coef < 0``` or ```Pr(>|z|) > 0.05```
+
+We would classify both the above populations as __FVT Doesn't Influence Survival__; however, the actual population where FVT Influences Survival was very close to a correct classification (the p-value was just 0.0533).
+
+### Interval Censored 
+
+We just did the above but added ```time0``` as a variable, like so:
+
+```{r}
+# Dataset with natural death
+cox_model_interval_nat = coxph(Surv(time0, time, status) ~ trait, data=converted_nat)
+summary(cox_model_interval_nat)
+```
+The estimates did not change much for the natural death dataset
+
+```{r}
+# Dataset with hazard rate exponentially proportional to fvt
+cox_model_interval_fvt = coxph(Surv(time0, time, status) ~ trait, data=converted_fvt)
+summary(cox_model_interval_fvt)
+```
+
+
+Again, the p-value was smaller for the dataset where there was a relationship, but in this case both would've been classified as __FVT Doesn't Influence Survival__.
+
+### Clustering
+
+We can tell the ```coxph``` model to consider covariance amongst the same individual in a population with the ```cluster``` parameter.
+
+```{r}
+# Dataset with hazard rate exponentially proportional to fvt
+cox_model_interval_fvt_withcluster = coxph(Surv(time0, time, status) ~ trait, 
+                                           cluster=ids,
+                                           data=converted_fvt)
+summary(cox_model_interval_fvt_withcluster)
+```
+
+
+So we tested all 4 combinations 
+
+- Right censored data with clustering by ```ids```
+- Right censored data without clustering by ```ids```
+- Interval censored data with clustering by ```ids```
+- Interval censored data without clustering by ```ids```
+
+The above for combinations were tested in ```cox_models.R```
+

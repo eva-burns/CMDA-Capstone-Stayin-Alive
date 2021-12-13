@@ -2,6 +2,7 @@ library(truncnorm)
 library(ggplot2)
 library(reshape2)
 library(survival)
+library(latex2exp)
 
 # S(t) - r
 survival_func = function(t, r, hazard_func){
@@ -33,10 +34,11 @@ create_plot <- function(data, plot_title, ymin, ymax, xmax){
     ylim(ymin,ymax) + 
     xlim(0,xmax) +
     ggtitle(plot_title) + 
-    xlab("Time")+ 
-    ylab("Function-Valued Trait") + 
+    xlab("Time (months)")+ 
+    ylab("Function-Valued Trait") +
+    # ylab(TeX("$fvt_{sin}(t)$")) + 
     theme_bw() +
-    theme(plot.title = element_text(size=18, hjust=0.5), axis.title=element_text(size=12))
+    theme(plot.title = element_text(size=18, hjust=0.5), axis.title=element_text(size=14))
 }
 # Create nxt matrix, where time starts at t=0
 # fvts - list of function-valued traits of each organism
@@ -67,7 +69,7 @@ create_data = function(fvts, hazards_nat, hazards_fvt,
   data_nat = data_nat[,1:ceiling(max(tods_nat))]
   data_fvt = data_fvt[,1:ceiling(max(tods_fvt))]
   if (create_plots) {
-    p1 = create_plot(data_nodeath, "Arbitrary Function-Valued Traits of a Simulated Population",
+    p1 = create_plot(data_nodeath, "Function-Valued Traits",
                      min(data_nodeath, na.rm=T),
                      max(data_nodeath, na.rm=T),
                      ncol(data_nodeath))
@@ -135,12 +137,12 @@ sim_hollings <- function(n, max_tod=500,
 # Simulates natural and fvt datasets for sin, n=number of organisms
 # sin has form c + b * sin(2*pi*t / a)
 # hazard has form lambda_fvt + m * sin
-sim_sin <- function(n, max_tod=1000,
-                         a_mean=20, a_sd=0.2, 
-                         b_mean=0, b_sd=0.5, 
-                         c=10, 
-                         m=0.001, lambda_nat=0.05, lambda_fvt=0.04, 
-                         create_plots=F, write_data=F) {
+sim_sin <- function(n, max_tod=500,
+                    a_mean=10, a_sd=0.1, 
+                    b_mean=0, b_sd=0.5, 
+                    c=1, 
+                    m=0.001, lambda_nat=0.05, lambda_fvt=0.05, 
+                    create_plots=F, write_data=F) {
   # Here, a is period length and b is height of wave
   as = rtruncnorm(n, mean = a_mean, sd = a_sd, a=0)
   bs = rtruncnorm(n, mean = b_mean, sd = b_sd, a=-c, b=c)
@@ -168,11 +170,13 @@ sim_sin <- function(n, max_tod=1000,
            hazards_nat=hazards_nat))
 }
 
+# Here, the sin function-valued trait has an exponential relationship
+# to the hazard rate, hazard = lambda_nat * exp(m*fvt)
 sim_exp_sin <- function(n, max_tod=500,
-                        a_mean=20, a_sd=0.2, 
+                        a_mean=10, a_sd=0.1, 
                         b_mean=0, b_sd=0.5, 
-                        c=10, 
-                        m=0.01, lambda_nat=0.05, lambda_fvt=0.04, 
+                        c=1, 
+                        m=1, lambda_nat=0.05, lambda_fvt=0.05/exp(1), 
                         create_plots=F, write_data=F) {
   # Here, a is period length and b is height of wave
   as = rtruncnorm(n, mean = a_mean, sd = a_sd, a=0)
