@@ -1,0 +1,47 @@
+---
+title: "Original_Spline_plots"
+author: "Ben Browder"
+date: "12/13/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(survival)
+library(ggplot2)
+library(dplyr)
+library(ggfortify)
+```
+
+
+```{r}
+setwd("~/Downloads/CMDA-Capstone-Stayin-Alive-main")
+source("convert_list.R")
+source("Splines/x_transform_data.R")
+Trait_Influences_Survival <- x_transform_data(read.csv('Data/fvt.csv'))
+Trait_Does_Not_Influence_Survival <- x_transform_data(read.csv('Data/natural.csv'))
+```
+
+```{r}
+setwd("~/Downloads/CMDA-Capstone-Stayin-Alive-main")
+source("Splines/x_transform_plot.R")
+x_transform_plot(Trait_Influences_Survival)
+```
+
+```{r}
+setwd("~/Downloads/CMDA-Capstone-Stayin-Alive-main")
+source("Splines/x_transform_plot.R")
+x_transform_plot(Trait_Does_Not_Influence_Survival)
+```
+
+```{r}
+setwd("~/Downloads/CMDA-Capstone-Stayin-Alive-main")
+source("Splines/spline_fits.R")
+spline_fits(Trait_Influences_Survival)
+```
+
+```{r}
+setwd("~/Downloads/CMDA-Capstone-Stayin-Alive-main")
+source("Splines/spline_fits.R")
+spline_fits(Trait_Does_Not_Influence_Survival)
+```
