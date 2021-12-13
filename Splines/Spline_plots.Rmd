@@ -1,5 +1,5 @@
 ---
-title: "Original_Spline_plots"
+title: "Original Spline plots"
 author: "Ben Browder"
 date: "12/13/2021"
 output: pdf_document
@@ -11,32 +11,32 @@ library(survival)
 library(ggplot2)
 library(dplyr)
 library(ggfortify)
-```
-
-
-```{r}
 source("convert_list.R")
 source("Splines/x_transform_data.R")
+source("Splines/x_transform_plot.R")
+source("Splines/spline_fits.R")
+```
+
+## Creating Linear Interpolated datasets of control and experimental group
+```{r}
 Trait_Influences_Survival <- x_transform_data(read.csv('Data/fvt.csv'))
 Trait_Does_Not_Influence_Survival <- x_transform_data(read.csv('Data/natural.csv'))
 ```
 
+## Plot of Linear Interpolated experimental group
 ```{r}
-source("Splines/x_transform_plot.R")
 x_transform_plot(Trait_Influences_Survival)
 ```
 
+## Plot of Linear Interpolated control group
 ```{r}
-source("Splines/x_transform_plot.R")
 x_transform_plot(Trait_Does_Not_Influence_Survival)
 ```
-
+## Plot of linearly interpolated experimental dataset with average Spline fit as well as a linear regression table of the Spline fit.
 ```{r}
-source("Splines/spline_fits.R")
 spline_fits(Trait_Influences_Survival)
 ```
-
+## Plot of linearly interpolated control dataset with average Spline fit as well as a linear regression table of the Spline fit.
 ```{r}
-source("Splines/spline_fits.R")
 spline_fits(Trait_Does_Not_Influence_Survival)
 ```
