@@ -1,0 +1,175 @@
+---
+title: "Aalen's Additive Regression"
+author: "Eva Burns"
+date: "12/12/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This will show the output of Aalen's regression over different types of data and censoring.  Unfortunately, we did not have time to build a model for Aalen's, so there will be no model evaluations.
+
+### Import Libraries and External Files
+```{r warning=FALSE, message=FALSE}
+library(survival)
+library(ggplot2)
+library(dplyr)
+library(ggfortify)
+library(gridExtra)
+
+source("../SimulationFunctions.R")
+source("../convert_list.R")
+```
+
+### Simulate Data
+```{r}
+# hollings
+data_hollings <- sim_hollings(1000)
+nat_hollings <- data_hollings$nat
+fvt_hollings <- data_hollings$fvt
+
+# sin with linear relationship to hazard
+data_sin <- sim_sin(1000)
+nat_sin <- data_sin$nat
+fvt_sin <- data_sin$fvt
+
+# sin with exponential relationship to hazard
+data_exp_sin <- sim_exp_sin(1000)
+nat_exp_sin <- data_exp_sin$nat
+fvt_exp_sin <- data_exp_sin$fvt
+```
+
+### Covert Data to Readable Format
+
+The data currently has one row per organism and has the trait values until they die, which after is just NAs.  For Aalen's, each measurement should be one one row.
+```{r}
+nat_hollings <- convert_list(nat_hollings)
+nat_hollings$time0 = nat_hollings$time - 1 # add extra time col for interval censoring
+fvt_hollings <- convert_list(fvt_hollings)
+fvt_hollings$time0 = fvt_hollings$time - 1
+
+nat_sin <- convert_list(nat_sin)
+nat_sin$time0 = nat_sin$time - 1
+fvt_sin <- convert_list(fvt_sin)
+fvt_sin$time0 = fvt_sin$time - 1
+
+nat_exp_sin <- convert_list(nat_exp_sin)
+nat_exp_sin$time0 = nat_exp_sin$time - 1
+fvt_exp_sin <- convert_list(fvt_exp_sin)
+fvt_exp_sin$time0 = fvt_exp_sin$time - 1
+```
+
+Here's a comparison of the data:
+```{r}
+# Before converting
+head(data_hollings$nat, 1)
+
+# After converting
+head(nat_hollings, 5)
+```
+
+### Right Censored Analysis
+
+Using right censored data on Aalen's regression.  We will only look at the output of Hollings type II in depth.
+
+#### Hollings:
+```{r fig.height=3}
+# Does not affect survival
+aa_hollings_nat_right <- aareg(Surv(time, status) ~ trait, data = nat_hollings)
+aa_hollings_nat_right
+
+# Affects survival
+aa_hollings_fvt_right <- aareg(Surv(time, status) ~ trait, data = fvt_hollings)
+aa_hollings_fvt_right
+
+plot1 <- autoplot(aa_hollings_nat_right[2], ylab="Hazard Rate", xlab= "Time", main="Trait Does Not Influence Survival", censor = FALSE) + theme_bw() + theme(legend.position = "none") + theme(plot.title = element_text(hjust = 0.5))
+plot2 <- autoplot(aa_hollings_fvt_right[2], ylab="Hazard Rate", xlab= "Time", main="Trait Influences Survival", censor = FALSE) + theme_bw() + theme(legend.position = "none") + theme(plot.title = element_text(hjust = 0.5))
+grid.arrange(plot1, plot2, ncol=2)
+```
+
+#### Sin with linear relationship to hazard:
+```{r fig.height=3}
+# Does not affect survival
+aa_sin_nat_right <- aareg(Surv(time, status) ~ trait, data = nat_sin)
+
+# Affects survival
+aa_sin_fvt_right <- aareg(Surv(time, status) ~ trait, data = fvt_sin)
+```
+
+#### Sin with exponential relationship to hazard:
+```{r fig.height=3}
+# Does not affect survival
+aa_exp_sin_nat_right <- aareg(Surv(time, status) ~ trait, data = nat_exp_sin)
+
+# Affects survival
+aa_exp_sin_fvt_right <- aareg(Surv(time, status) ~ trait, data = fvt_exp_sin)
+```
+
+The table below summarizes the output of right censored Aalen's on all of the types of simulated data.
+
+|                   |                            | Slope | Coef | P-value |
+|-------------------|----------------------------|-------|------|---------|
+| Hollings          | Doesn't influence survival |`r round(summary(aa_hollings_nat_right)$table[2], 5)`|`r round(summary(aa_hollings_nat_right)$table[4], 5)`|`r round(summary(aa_hollings_nat_right)$table[10], 3)`|
+|                   | Influences survival        |`r round(summary(aa_hollings_fvt_right)$table[2], 5)`|`r round(summary(aa_hollings_fvt_right)$table[4], 5)`|`r round(summary(aa_hollings_fvt_right)$table[10], 3)`|
+| Sin (linear)      | Doesn't influence survival |`r round(summary(aa_sin_nat_right)$table[2], 5)`|`r round(summary(aa_sin_nat_right)$table[4], 5)`|`r round(summary(aa_sin_nat_right)$table[10], 3)`|
+|                   | Influences survival        |`r round(summary(aa_sin_fvt_right)$table[2], 5)`|`r round(summary(aa_sin_fvt_right)$table[4], 5)`|`r round(summary(aa_sin_fvt_right)$table[10], 3)`|
+| Sin (exponential) | Doesn't influence survival |`r round(summary(aa_exp_sin_nat_right)$table[2], 5)`|`r round(summary(aa_exp_sin_nat_right)$table[4], 5)`|`r round(summary(aa_exp_sin_nat_right)$table[10], 3)`|
+|                   | Influences survival        |`r round(summary(aa_exp_sin_fvt_right)$table[2], 5)`|`r round(summary(aa_exp_sin_fvt_right)$table[4], 5)`|`r round(summary(aa_exp_sin_fvt_right)$table[10], 3)`|
+
+The Hollings type II data was the only type that had a consistently low enough p-value to make a conclusion about the slope and coefficient.  Running this code multiple times on the sin data will give different results every time.  The slope and coefficient of the Hollings data when the trait influences survival typically was lower than if the trait did not influence survival.
+
+### Interval Censored Analysis
+
+Using interval censored data on Aalen's regression.  We will only look at the output of Hollings type II in depth.
+
+#### Hollings:
+```{r fig.height=3}
+# Does not affect survival
+aa_hollings_nat_interval <- aareg(Surv(time0, time, status) ~ trait, data = nat_hollings)
+aa_hollings_nat_interval
+
+# Affects survival
+aa_hollings_fvt_interval <- aareg(Surv(time0, time, status) ~ trait, data = fvt_hollings)
+aa_hollings_fvt_interval
+
+plot1 <- autoplot(aa_hollings_nat_interval[2], ylab="Hazard Rate", xlab= "Time", main="Trait Does Not Influence Survival", censor = FALSE) + theme_bw() + theme(legend.position = "none") + theme(plot.title = element_text(hjust = 0.5))
+plot2 <- autoplot(aa_hollings_fvt_interval[2], ylab="Hazard Rate", xlab= "Time", main="Trait Influences Survival", censor = FALSE) + theme_bw() + theme(legend.position = "none") + theme(plot.title = element_text(hjust = 0.5))
+grid.arrange(plot1, plot2, ncol=2)
+```
+
+#### Sin with linear relationship to hazard:
+```{r fig.height=3}
+# Does not affect survival
+aa_sin_nat_interval <- aareg(Surv(time0, time, status) ~ trait, data = nat_sin)
+
+# Affects survival
+aa_sin_fvt_interval <- aareg(Surv(time0, time, status) ~ trait, data = fvt_sin)
+```
+
+#### Sin with exponential relationship to hazard:
+```{r fig.height=3}
+# Does not affect survival
+aa_exp_sin_nat_interval <- aareg(Surv(time0, time, status) ~ trait, data = nat_exp_sin)
+
+# Affects survival
+aa_exp_sin_fvt_interval <- aareg(Surv(time0, time, status) ~ trait, data = fvt_exp_sin)
+```
+
+The table below summarizes the output of interval censored Aalen's on all of the types of simulated data.
+
+|                   |                            | Slope | Coef | P-value |
+|-------------------|----------------------------|-------|------|---------|
+| Hollings          | Doesn't influence survival |`r round(summary(aa_hollings_nat_interval)$table[2], 5)`|`r round(summary(aa_hollings_nat_interval)$table[4], 5)`|`r round(summary(aa_hollings_nat_interval)$table[10], 3)`|
+|                   | Influences survival        |`r round(summary(aa_hollings_fvt_interval)$table[2], 5)`|`r round(summary(aa_hollings_fvt_interval)$table[4], 5)`|`r round(summary(aa_hollings_fvt_interval)$table[10], 3)`|
+| Sin (linear)      | Doesn't influence survival |`r round(summary(aa_sin_nat_interval)$table[2], 5)`|`r round(summary(aa_sin_nat_interval)$table[4], 5)`|`r round(summary(aa_sin_nat_interval)$table[10], 3)`|
+|                   | Influences survival        |`r round(summary(aa_sin_fvt_interval)$table[2], 5)`|`r round(summary(aa_sin_fvt_interval)$table[4], 5)`|`r round(summary(aa_sin_fvt_interval)$table[10], 3)`|
+| Sin (exponential) | Doesn't influence survival |`r round(summary(aa_exp_sin_nat_interval)$table[2], 5)`|`r round(summary(aa_exp_sin_nat_interval)$table[4], 5)`|`r round(summary(aa_exp_sin_nat_interval)$table[10], 3)`|
+|                   | Influences survival        |`r round(summary(aa_exp_sin_fvt_interval)$table[2], 5)`|`r round(summary(aa_exp_sin_fvt_interval)$table[4], 5)`|`r round(summary(aa_exp_sin_fvt_interval)$table[10], 3)`|
+
+The Hollings type II data was the only type that had a consistently low enough p-value to make a conclusion about the slope and coefficient.  Running this code multiple times on the sin data will give different results every time.  The slope of the Hollings data when the trait influences survival typically was lower than if the trait did not influence survival.
+
+
+In conclusion, only the Hollings type II data worked well with Aalen's regression.  Typically when the trait influences survival, the slope is lower than if it did not influence survival.
+
