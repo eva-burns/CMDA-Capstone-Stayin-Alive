@@ -2,7 +2,7 @@
 
 library(survival)
 library(dplyr)
-source("convert_list.R")
+source("../convert_list.R")
 
 #data: dataset prior to convert_list function
 #output: list of Linear Interpolated dataset with a constant x-axis length of 50.

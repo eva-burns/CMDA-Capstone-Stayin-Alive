@@ -1,7 +1,7 @@
 # Function that computes f-score of a model
 
 library(ModelMetrics)
-source("SimulationFunctions.R")
+# source("SimulationFunctions.R")
 
 # model: model to test on.  Takes in dataset and returns classification
 # sim_function: function to call that simulates for certain fvt

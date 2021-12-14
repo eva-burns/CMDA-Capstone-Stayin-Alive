@@ -5,31 +5,31 @@ date: "12/13/2021"
 output: pdf_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(survival)
 library(ggplot2)
 library(dplyr)
 library(ggfortify)
-source("convert_list.R")
-source("Splines/x_transform_data.R")
-source("Splines/x_transform_plot.R")
-source("Splines/spline_fits.R")
+source("../convert_list.R")
+source("x_transform_data.R")
+source("x_transform_plot.R")
+source("spline_fits.R")
 ```
 
 ## Creating Linear Interpolated datasets of control and experimental group
-```{r}
-Trait_Influences_Survival <- x_transform_data(read.csv('Data/fvt.csv'))
-Trait_Does_Not_Influence_Survival <- x_transform_data(read.csv('Data/natural.csv'))
+```{r message=FALSE, warning=FALSE}
+Trait_Influences_Survival <- x_transform_data(read.csv('../Data/fvt.csv'))
+Trait_Does_Not_Influence_Survival <- x_transform_data(read.csv('../Data/natural.csv'))
 ```
 
 ## Plot of Linear Interpolated experimental group
-```{r}
+```{r message=FALSE, warning=FALSE}
 x_transform_plot(Trait_Influences_Survival)
 ```
 
 ## Plot of Linear Interpolated control group
-```{r}
+```{r message=FALSE, warning=FALSE}
 x_transform_plot(Trait_Does_Not_Influence_Survival)
 ```
 ## Plot of linearly interpolated experimental dataset with average Spline fit as well as a linear regression table of the Spline fit.
