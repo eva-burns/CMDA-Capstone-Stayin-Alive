@@ -12,7 +12,6 @@ library(splines)
 #output: Spline average intercept and coefficient between the two datasets and threshold value
 spline_coefficient_train <- function(data, data1){
   coef <- c()
-  #Runs through datasets to get average Spline intercept and coefficient values
   for (i in 1:length(data)){
     x <- seq(0:(length(unlist(data[1]))-1))
     y <- unlist(data[i])
@@ -27,7 +26,6 @@ spline_coefficient_train <- function(data, data1){
   }
   matrix <- matrix(coef,nrow = 2000,ncol = 5, byrow = TRUE)
   n=0
-  #Goes through datasets to compare organisms Spline coefficients to average coefficient to get threshold value.
   for (i in 1:length(data)){
     x <- seq(0:(length(unlist(data[1]))-1))
     y <- unlist(data[i])
@@ -61,7 +59,6 @@ spline_coefficient_test <- function(data){
   df4 <- results$df4
   thresh <- results$thresh
   n = 0
-  #Compares organisms to average coefficient to see if organism was affected by trait.
   for (i in 1:length(data)){
     x <- seq(0:(length(unlist(data[1]))-1))
     y <- unlist(data[i])
@@ -70,7 +67,6 @@ spline_coefficient_test <- function(data){
       n = n+1
     }
   }
-  #Compares number of organism to classifier to determine classifier
   if (n > length(data)*thresh){
     return(0)
   }
@@ -88,8 +84,8 @@ spline_coefficient_test <- function(data){
 # thresh - Threshold value
 # output - Binary output of 1 - trait affects survival, 0 - trait does not affect survival
 spline_coefficient_test_params <- function(data, int, df1, df2, df3, df4, thresh){
+  data <- x_transform_data(data)
   n = 0
-  #Compares organisms to average coefficient to see if organism was affected by trait.
   for (i in 1:length(data)){
     x <- seq(0:(length(unlist(data[1]))-1))
     y <- unlist(data[i])
@@ -98,7 +94,6 @@ spline_coefficient_test_params <- function(data, int, df1, df2, df3, df4, thresh
       n = n+1
     }
   }
-  #Compares number of organism to classifier to determine classifier
   if (n > length(data)*thresh){
     return(0)
   }
