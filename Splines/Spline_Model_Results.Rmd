@@ -5,7 +5,7 @@ date: "12/13/2021"
 output: pdf_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(survival)
 library(ggplot2)
@@ -42,19 +42,19 @@ spline_coefficient_test(read.csv('../Data/natural_1000.csv'))
 
 ## Testing Binary results using Accuracy test of 30 organisms with a total of 100 Holling datasets, 50 control and 50 experimental.
 ```{r}
-coef_test <- f_beta_eval(spline_coefficient_test, sim_hollings, 5, 5)
+coef_test <- f_beta_eval(spline_coefficient_test, sim_hollings, 30, 50)
 coef_test
 ```
 
 ## Testing Binary results using Accuracy test of 50 organisms with a total of 100 Holling datasets, 50 control and 50 experimental.
 ```{r}
-coef_test <- f_beta_eval(spline_coefficient_test, sim_hollings, 5, 5)
+coef_test <- f_beta_eval(spline_coefficient_test, sim_hollings, 50, 50)
 coef_test
 ```
 
 ## Testing Binary results using Accuracy test of 100 organisms with a total of 100 Holling datasets, 50 control and 50 experimental.
 ```{r}
-coef_test <- f_beta_eval(spline_coefficient_test, sim_hollings, 5, 5)
+coef_test <- f_beta_eval(spline_coefficient_test, sim_hollings, 100, 50)
 coef_test
 ```
 
@@ -71,7 +71,7 @@ results
 ```
 ## Testing Binary results using Accuracy test of 30 organisms with a total of 100 Sinusodal datasets, 50 control and 50 experimental.
 ```{r}
-coef_test <- f_beta_eval(spline_coefficient_test, sim_sin, 5, 5)
+coef_test <- f_beta_eval(spline_coefficient_test, sim_sin, 30, 50)
 coef_test
 ```
 

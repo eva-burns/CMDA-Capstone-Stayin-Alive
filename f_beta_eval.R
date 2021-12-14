@@ -20,7 +20,6 @@ f_beta_eval <- function(model, sim_function, num_org, num_ds, ...){
   accuracy = sum(actual==pred) / (2*num_ds)
   return(list(acc=accuracy, 
               fb=fScore(actual, pred, beta=1),
-              preds=pred,
-              cm=confusionMatrix(actual,pred)))
+              preds=pred))
 }
 
