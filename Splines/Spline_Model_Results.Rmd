@@ -1,0 +1,78 @@
+---
+title: "Spline_Model_Results"
+author: "Ben Browder"
+date: "12/13/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(survival)
+library(ggplot2)
+library(dplyr)
+library(ggfortify)
+library(ModelMetrics)
+source("convert_list.R")
+source("Splines/x_transform_data.R")
+source("Splines/spline_model_functions.R")
+source("SimulationFunctions.R")
+source("f_beta_eval.R")
+```
+
+## Creating Control and Experimental Holling Linear Interpolated Datasets in order to train on.
+```{r}
+holling_data <- x_transform_data(read.csv('Data/fvt_1000.csv'))
+holling_data1 <- x_transform_data(read.csv('Data/natural_1000.csv'))
+```
+
+## Train function to get Spline average intercept, coefficients and threshold value from Holling Control and Experimental datasets combined.
+```{r}
+results <- spline_coefficient_train(holling_data, holling_data1)
+results
+```
+
+## Testing Binary results using function with parameters.
+```{r}
+spline_coefficient_test_params(read.csv('Data/natural_1000.csv'), results$int, results$df1, results$df2, results$df3, results$df4, results$thresh)
+```
+## Testing Binary results using function with no parameters.
+```{r}
+spline_coefficient_test(read.csv('Data/natural_1000.csv'))
+```
+
+## Testing Binary results using Accuracy test of 30 organisms with a total of 100 Holling datasets, 50 control and 50 experimental.
+```{r}
+coef_test <- f_beta_eval(spline_coefficient_test, sim_hollings, 30, 50)
+coef_test
+```
+
+## Testing Binary results using Accuracy test of 50 organisms with a total of 100 Holling datasets, 50 control and 50 experimental.
+```{r}
+coef_test <- f_beta_eval(spline_coefficient_test, sim_hollings, 50, 50)
+coef_test
+```
+
+## Testing Binary results using Accuracy test of 100 organisms with a total of 100 Holling datasets, 50 control and 50 experimental.
+```{r}
+coef_test <- f_beta_eval(spline_coefficient_test, sim_hollings, 100, 50)
+coef_test
+```
+
+## Creating Control and Experimental Sinusodal Linear Interpolated Datasets in order to train on.
+```{r}
+sin_data <- x_transform_data(read.csv('Data/sin_linearhazard_control_1000org.csv'))
+sin_data1 <- x_transform_data(read.csv('Data/sin_linearhazard_experimental_1000org.csv'))
+```
+
+## Train function to get Spline average intercept, coefficients and threshold value from Sinusodal Control and Experimental datasets combined.
+```{r}
+results <- spline_coefficient_train(sin_data, sin_data1)
+results
+```
+## Testing Binary results using Accuracy test of 30 organisms with a total of 100 Sinusodal datasets, 50 control and 50 experimental.
+```{r}
+coef_test <- f_beta_eval(spline_coefficient_test, sim_sin, 30, 50)
+coef_test
+```
+
+## Rest of results for Sinusodal return 50% accuracy with F-Beta score of 0.
